@@ -8,6 +8,8 @@ import com.rs.springbootjwtauth.service.UserService;
 import com.rs.springbootjwtauth.util.JwtTokenUtil;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,8 @@ import java.util.stream.Collectors;
 
 @RestController
 public class UserController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
+
     private ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
 
     @Autowired
@@ -60,22 +64,26 @@ public class UserController {
     @PostMapping("/authenticate")
     public String token(HttpServletRequest req) throws IOException {
         String token  = null;
+        UserDetails userDetails = null;
         String result = IOUtils.toString(req.getInputStream(), StandardCharsets.UTF_8);
-        System.out.println(result);
+        LOGGER.info(result);
         JSONObject jsonUsernameAndPassword = new JSONObject(result);
         JSONObject resp = new JSONObject();
         String username = jsonUsernameAndPassword.getString("username");
         String password = jsonUsernameAndPassword.getString("password");
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        userDetails = userDetailsService.loadUserByUsername(username);
         if(userDetails != null && userDetails.getPassword().equals(password)) {
             Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(auth);
             if(auth.isAuthenticated()) {
-               token = jwtTokenUtil.createToken(userDetails.getUsername(), userDetails.getAuthorities().stream().map(authority->((GrantedAuthority) authority).getAuthority()).collect(Collectors.toList()));
+               token = jwtTokenUtil.createToken(userDetails.getUsername(), userDetails.getAuthorities().stream().map(authority->authority.getAuthority()).collect(Collectors.toList()));
             }
         }
         resp.put("username" , username);
-        resp.put("authorities", userDetails.getAuthorities().stream().map(auth -> ((GrantedAuthority) auth).getAuthority()).collect(Collectors.toList()));
+        if(userDetails != null && userDetails.getAuthorities() != null) {
+            resp.put("authorities",
+                    userDetails.getAuthorities().stream().map(authority -> authority.getAuthority()).collect(Collectors.toList()));
+        }
         resp.put("token", token);
 
         return resp.toString();
