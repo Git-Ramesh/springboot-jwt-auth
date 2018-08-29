@@ -54,7 +54,7 @@ public class  JwtTokenUtil {
     public Authentication getAuthentication(String token) {
         System.out.println("Getting the authentication from token");
         UserDetails userDetails =userDetailsService.loadUserByUsername(getUsername(token));
-        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+        return new UsernamePasswordAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
     }
 
     public String getUsername(String token) {
