@@ -67,7 +67,7 @@ public class UserController {
         String username = jsonUsernameAndPassword.getString("username");
         String password = jsonUsernameAndPassword.getString("password");
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        if(userDetails != null) {
+        if(userDetails != null && userDetails.getPassword().equals(password)) {
             Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(auth);
             if(auth.isAuthenticated()) {
